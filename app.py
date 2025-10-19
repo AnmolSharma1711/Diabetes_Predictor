@@ -58,9 +58,9 @@ outcome = st.selectbox("True Outcome (if known)", [0, 1])
 if st.button("Save Data and Retrain"):
     # Append to CSV
     input_df["Outcome"] = outcome
-    df_existing = pd.read_csv("diabetes.csv")
+    df_existing = pd.read_csv("Dataset/diabetes.csv")
     df_updated = pd.concat([df_existing, input_df], ignore_index=True)
-    df_updated.to_csv("diabetes.csv", index=False)
+    df_updated.to_csv("Dataset/diabetes.csv", index=False)
     st.success("✅ New data saved!")
 
     # Retrain model using train.py
