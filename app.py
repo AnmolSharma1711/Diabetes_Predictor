@@ -4,6 +4,7 @@ import numpy as np
 import joblib
 import subprocess
 import time
+import sys
 from sklearn.preprocessing import StandardScaler
 
 # ✅ Load model
@@ -71,8 +72,9 @@ if not is_cloud:
 
         # Retrain model using train.py
         with st.spinner("Retraining model... this may take a few minutes ⏳"):
+            # Use the same Python interpreter that's running Streamlit
             result = subprocess.run(
-                ["python", "train.py"], 
+                [sys.executable, "train.py"], 
                 capture_output=True, 
                 text=True
             )
