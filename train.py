@@ -80,6 +80,7 @@ for name, cfg in models.items():
     print(f"\n Training {name} with cross-validation and SMOTE...")
 
     pipeline = ImbPipeline([
+        #Imputing with Median beacuse of Outliers
         ("imputer", SimpleImputer(strategy="median")),
         ("scaler", StandardScaler()),
         ("smote", SMOTE(random_state=42)),
