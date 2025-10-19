@@ -126,5 +126,5 @@ if not is_cloud:
                     with st.expander("📋 Additional Output"):
                         st.code(result.stdout)
 else:
-    st.info("ℹ️ This is a demo deployment. Model retraining is only available when running locally.")
+    st.info("ℹ️Model retraining is only available when running locally.")
 
