@@ -51,23 +51,31 @@ if st.button("Predict"):
     st.info(f"Probability of Diabetes: {proba*100:.2f}%")
 
 # --- Add new data to dataset ---
-st.subheader("Add Data and Retrain")
-st.write("Append this new record to the dataset and retrain the model.")
+import os
 
-outcome = st.selectbox("True Outcome (if known)", [0, 1])
-if st.button("Save Data and Retrain"):
-    # Append to CSV
-    input_df["Outcome"] = outcome
-    df_existing = pd.read_csv("Dataset/diabetes.csv")
-    df_updated = pd.concat([df_existing, input_df], ignore_index=True)
-    df_updated.to_csv("Dataset/diabetes.csv", index=False)
-    st.success("✅ New data saved!")
+# Check if running on Streamlit Cloud (read-only environment)
+is_cloud = os.getenv("STREAMLIT_SHARING_MODE") or not os.access(".", os.W_OK)
 
-    # Retrain model using train.py
-    with st.spinner("Retraining model... this may take a few minutes ⏳"):
-        subprocess.run(["python", "train.py"], check=True)
-        time.sleep(2)
-    
-    st.success("🎉 Model retrained successfully!")
-    st.info("Reload the app to use the new model.")
+if not is_cloud:
+    st.subheader("Add Data and Retrain")
+    st.write("Append this new record to the dataset and retrain the model.")
+
+    outcome = st.selectbox("True Outcome (if known)", [0, 1])
+    if st.button("Save Data and Retrain"):
+        # Append to CSV
+        input_df["Outcome"] = outcome
+        df_existing = pd.read_csv("Dataset/diabetes.csv")
+        df_updated = pd.concat([df_existing, input_df], ignore_index=True)
+        df_updated.to_csv("Dataset/diabetes.csv", index=False)
+        st.success("✅ New data saved!")
+
+        # Retrain model using train.py
+        with st.spinner("Retraining model... this may take a few minutes ⏳"):
+            subprocess.run(["python", "train.py"], check=True)
+            time.sleep(2)
+        
+        st.success("🎉 Model retrained successfully!")
+        st.info("Reload the app to use the new model.")
+else:
+    st.info("ℹ️ This is a demo deployment. Model retraining is only available when running locally.")
 
