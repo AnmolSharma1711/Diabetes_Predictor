@@ -13,6 +13,11 @@ import joblib
 import mlflow
 import mlflow.sklearn
 import os
+import sys
+
+# Set UTF-8 encoding for console output (fixes emoji display on Windows)
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding='utf-8')
 
 # ✅ Load and clean dataset
 # Use relative path instead of hardcoded absolute path
