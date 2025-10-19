@@ -55,7 +55,18 @@ if st.button("Predict"):
 import os
 
 # Check if running on Streamlit Cloud (read-only environment)
-is_cloud = os.getenv("STREAMLIT_SHARING_MODE") or not os.access(".", os.W_OK)
+# Test if we can actually write to the filesystem
+def is_writable():
+    try:
+        test_file = ".write_test_temp"
+        with open(test_file, 'w') as f:
+            f.write("test")
+        os.remove(test_file)
+        return True
+    except:
+        return False
+
+is_cloud = not is_writable()
 
 if not is_cloud:
     st.subheader("Add Data and Retrain")
@@ -83,6 +94,10 @@ if not is_cloud:
                 time.sleep(1)
                 st.success("🎉 Model retrained successfully!")
                 st.info("Reload the app to use the new model.")
+                
+                # Show training output
+                with st.expander("📊 View Training Log"):
+                    st.code(result.stdout)
             else:
                 st.error("❌ Model retraining failed!")
                 st.error("**Error Details:**")
