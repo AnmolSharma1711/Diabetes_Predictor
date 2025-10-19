@@ -54,19 +54,41 @@ if st.button("Predict"):
 # --- Add new data to dataset ---
 import os
 
-# Check if running on Streamlit Cloud (read-only environment)
-# Test if we can actually write to the filesystem
-def is_writable():
-    try:
-        test_file = ".write_test_temp"
-        with open(test_file, 'w') as f:
-            f.write("test")
-        os.remove(test_file)
+# More reliable cloud detection for Streamlit Community Cloud
+# Check multiple indicators
+def detect_streamlit_cloud():
+    # Method 1: Check for Streamlit Cloud specific paths
+    if os.path.exists("/mount/src"):
         return True
-    except:
-        return False
+    
+    # Method 2: Check environment variables
+    if any([
+        os.getenv("STREAMLIT_SHARING_MODE"),
+        os.getenv("STREAMLIT_SERVER_PORT"),
+    ]):
+        # Additional check: Streamlit Cloud uses specific hostnames
+        hostname = os.getenv("HOSTNAME", "")
+        if "streamlit" in hostname.lower() or hostname.startswith("runner-"):
+            return True
+    
+    # Method 3: Try to detect read-only filesystem for critical files
+    try:
+        # Try to write to the Dataset folder (which should fail on cloud)
+        test_path = "Dataset/.cloud_test"
+        with open(test_path, 'w') as f:
+            f.write("test")
+        os.remove(test_path)
+        return False  # Write succeeded, we're local
+    except (PermissionError, OSError):
+        return True  # Write failed, we're on cloud
+    
+is_cloud = detect_streamlit_cloud()
 
-is_cloud = not is_writable()
+# Debug info (optional - remove after confirming it works)
+with st.expander("🔍 Debug Info"):
+    st.write(f"Running on cloud: {is_cloud}")
+    st.write(f"HOSTNAME: {os.getenv('HOSTNAME', 'Not set')}")
+    st.write(f"/mount/src exists: {os.path.exists('/mount/src')}")
 
 if not is_cloud:
     st.subheader("Add Data and Retrain")
