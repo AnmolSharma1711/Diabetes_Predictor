@@ -95,9 +95,7 @@ if not is_cloud:
                 st.success("🎉 Model retrained successfully!")
                 st.info("Reload the app to use the new model.")
                 
-                # Show training output
-                with st.expander("📊 View Training Log"):
-                    st.code(result.stdout)
+            
             else:
                 st.error("❌ Model retraining failed!")
                 st.error("**Error Details:**")
