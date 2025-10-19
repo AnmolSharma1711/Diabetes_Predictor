@@ -71,11 +71,27 @@ if not is_cloud:
 
         # Retrain model using train.py
         with st.spinner("Retraining model... this may take a few minutes ⏳"):
-            subprocess.run(["python", "train.py"], check=True)
-            time.sleep(2)
-        
-        st.success("🎉 Model retrained successfully!")
-        st.info("Reload the app to use the new model.")
+            result = subprocess.run(
+                ["python", "train.py"], 
+                capture_output=True, 
+                text=True
+            )
+            
+            if result.returncode == 0:
+                time.sleep(1)
+                st.success("🎉 Model retrained successfully!")
+                st.info("Reload the app to use the new model.")
+                
+                # Show training output
+                with st.expander("📊 View Training Log"):
+                    st.code(result.stdout)
+            else:
+                st.error("❌ Model retraining failed!")
+                st.error("**Error Details:**")
+                st.code(result.stderr)
+                if result.stdout:
+                    with st.expander("📋 Additional Output"):
+                        st.code(result.stdout)
 else:
     st.info("ℹ️ This is a demo deployment. Model retraining is only available when running locally.")
 

@@ -12,15 +12,12 @@ from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 import joblib
 import mlflow
 import mlflow.sklearn
-
-# ✅ Load and clean dataset
 import os
 
-# Use relative path that works across platforms
-data_path = os.path.join("Dataset", "diabetes.csv")
-if not os.path.exists(data_path):
-    data_path = "Dataset/diabetes.csv"
-data = pd.read_csv(data_path)
+# ✅ Load and clean dataset
+# Use relative path instead of hardcoded absolute path
+dataset_path = os.path.join("Dataset", "diabetes.csv")
+data = pd.read_csv(dataset_path)
 
 # Replace invalid zeros with NaN for these columns
 cols_with_zero_nan = ["Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI"]
