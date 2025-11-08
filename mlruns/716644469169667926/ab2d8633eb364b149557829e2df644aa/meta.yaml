@@ -1,0 +1,14 @@
+artifact_uri: file:///D:/PIMA/mlruns/716644469169667926/ab2d8633eb364b149557829e2df644aa/artifacts
+end_time: 1762614370362
+entry_point_name: ''
+experiment_id: '716644469169667926'
+lifecycle_stage: active
+run_id: ab2d8633eb364b149557829e2df644aa
+run_name: Logistic Regression
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1762614356299
+status: 3
+tags: []
+user_id: shwet

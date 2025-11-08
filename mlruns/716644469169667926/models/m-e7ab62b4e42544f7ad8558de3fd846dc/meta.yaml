@@ -1,0 +1,10 @@
+artifact_location: file:///D:/PIMA/mlruns/716644469169667926/models/m-e7ab62b4e42544f7ad8558de3fd846dc/artifacts
+creation_timestamp: 1762614371280
+experiment_id: '716644469169667926'
+last_updated_timestamp: 1762614376273
+model_id: m-e7ab62b4e42544f7ad8558de3fd846dc
+model_type: null
+name: model
+source_run_id: 523b11414d78435e9d2bd68ec12f42ee
+status: 2
+status_message: null
