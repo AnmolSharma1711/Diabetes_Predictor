@@ -4,6 +4,7 @@ pandas
 numpy
 scikit-learn
 imbalanced-learn
-mlflow
 seaborn
 matplotlib
+scipy
+statsmodels

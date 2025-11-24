@@ -1,91 +1,131 @@
 import streamlit as st
-import joblib
 import pandas as pd
 import numpy as np
+import joblib
+from sklearn.preprocessing import MinMaxScaler
 
 # Page configuration
 st.set_page_config(
-    page_title="Diabetes Prediction App",
+    page_title="Diabetes Prediction System",
     page_icon="🏥",
     layout="wide"
 )
 
-# Load the saved artifacts
+# Load the model and scaler
 @st.cache_resource
-def load_artifacts():
+def load_model():
     try:
-        artifacts = joblib.load("diabetes_artifacts.pkl")
-        return artifacts
-    except FileNotFoundError:
-        st.error("Model file 'diabetes_artifacts.pkl' not found. Please ensure the file exists in the same directory.")
+        model = joblib.load("model.pkl")
+        return model
+    except:
         return None
 
-# Main app
+@st.cache_resource
+def load_scaler():
+    try:
+        scaler = joblib.load("scaler.pkl")
+        return scaler
+    except:
+        return None
+
+# Load dataset for visualization
+@st.cache_data
+def load_data():
+    try:
+        data = pd.read_csv("Dataset/diabetes.csv")
+        return data
+    except:
+        return None
+
+def preprocess_input(data_dict, scaler):
+    """Preprocess user input to match training data format"""
+    # Ensure column order matches training data (same as in notebook)
+    # Order: Pregnancies, Glucose, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age
+    
+    # Create array with values in correct order
+    input_array = np.array([[
+        data_dict['Pregnancies'],
+        data_dict['Glucose'],
+        data_dict['SkinThickness'],
+        data_dict['Insulin'],
+        data_dict['BMI'],
+        data_dict['DiabetesPedigreeFunction'],
+        data_dict['Age']
+    ]])
+    
+    # Apply the same scaler used during training
+    scaled_data = scaler.transform(input_array)
+    
+    return scaled_data
+
 def main():
+    # Header
     st.title("🏥 Diabetes Prediction System")
-    st.markdown("""
-    This application predicts the likelihood of diabetes based on various health parameters.
-    Please enter the patient's information below.
-    """)
+    st.markdown("---")
     
-    # Load artifacts
-    artifacts = load_artifacts()
+    # Load model and scaler
+    model = load_model()
+    scaler = load_scaler()
     
-    if artifacts is None:
-        st.stop()
+    if model is None or scaler is None:
+        st.error("⚠️ Model or scaler not found!")
+        st.info("Please run the Jupyter notebook cells to train and save the model and scaler first.")
+        return
     
-    model = artifacts["model"]
-    scaler = artifacts["scaler"]
-    medians = artifacts["medians"]
-    feature_order = artifacts["feature_order"]
+    show_prediction_page(model, scaler)
+
+def show_prediction_page(model, scaler):
+    st.subheader("Enter Patient Information")
     
-    # Create two columns for input
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("Patient Information")
         pregnancies = st.number_input(
             "Number of Pregnancies",
             min_value=0,
             max_value=20,
             value=0,
-            step=1,
             help="Number of times pregnant"
         )
         
-        glucose = st.number_input(
+        glucose = st.slider(
             "Glucose Level (mg/dL)",
             min_value=0,
-            max_value=300,
+            max_value=200,
             value=120,
-            step=1,
-            help="Plasma glucose concentration (2 hours in an oral glucose tolerance test)"
+            help="Plasma glucose concentration after 2 hours in an oral glucose tolerance test"
         )
         
-        insulin = st.number_input(
-            "Insulin Level (mu U/ml)",
+        skin_thickness = st.slider(
+            "Skin Thickness (mm)",
+            min_value=0,
+            max_value=100,
+            value=20,
+            help="Triceps skin fold thickness"
+        )
+        
+        insulin = st.slider(
+            "Insulin Level (μU/mL)",
             min_value=0,
             max_value=900,
-            value=0,
-            step=1,
-            help="2-Hour serum insulin (mu U/ml). Enter 0 if unknown."
+            value=80,
+            help="2-Hour serum insulin"
         )
     
     with col2:
-        st.subheader("Physical Measurements")
-        bmi = st.number_input(
+        bmi = st.slider(
             "BMI (Body Mass Index)",
             min_value=0.0,
             max_value=70.0,
             value=25.0,
             step=0.1,
-            help="Weight in kg/(height in m)^2"
+            help="Body mass index (weight in kg/(height in m)^2)"
         )
         
-        diabetes_pedigree = st.number_input(
+        dpf = st.slider(
             "Diabetes Pedigree Function",
             min_value=0.0,
-            max_value=3.0,
+            max_value=2.5,
             value=0.5,
             step=0.01,
             help="Diabetes pedigree function (genetic influence)"
@@ -95,117 +135,76 @@ def main():
             "Age (years)",
             min_value=1,
             max_value=120,
-            value=30,
-            step=1,
+            value=25,
             help="Age in years"
         )
     
     st.markdown("---")
     
     # Prediction button
-    if st.button("🔍 Predict Diabetes Risk", type="primary", use_container_width=True):
-        # Create input dictionary
-        manual_input_dict = {
-            "Pregnancies": pregnancies,
-            "Glucose": glucose,
-            "Insulin": insulin,
-            "BMI": bmi,
-            "DiabetesPedigreeFunction": diabetes_pedigree,
-            "Age": age
+    if st.button("🔍 Predict Diabetes Risk"):
+        # Prepare input data (excluding BloodPressure as per the model)
+        input_data = {
+            'Pregnancies': pregnancies,
+            'Glucose': glucose,
+            'SkinThickness': skin_thickness,
+            'Insulin': insulin,
+            'BMI': bmi,
+            'DiabetesPedigreeFunction': dpf,
+            'Age': age
         }
         
-        # Build DataFrame in correct column order
-        manual_df = pd.DataFrame(
-            [[manual_input_dict[col] for col in feature_order]],
-            columns=feature_order
-        )
-        
-        # Define invalid zero columns (same as training)
-        invalid_zero = ['Glucose', 'Insulin', 'BMI']
-        
-        # Zero -> NaN replacement for invalid zero columns
-        for col in invalid_zero:
-            if col in manual_df.columns:
-                manual_df[col] = manual_df[col].replace(0, np.nan)
-        
-        # Fill NaNs with training medians
-        for col in invalid_zero:
-            if col in manual_df.columns:
-                manual_df[col].fillna(medians[col], inplace=True)
-        
-        # Scale using stored scaler
-        manual_scaled = scaler.transform(manual_df)
-        
-        # Predict
-        prediction = model.predict(manual_scaled)[0]
-        prediction_proba = model.predict_proba(manual_scaled)[0]
+        # Preprocess and predict
+        processed_data = preprocess_input(input_data, scaler)
+        prediction = model.predict(processed_data)
         
         # Display results
         st.markdown("---")
-        st.subheader("📊 Prediction Results")
+        st.subheader("Prediction Results")
         
-        # Create three columns for results
-        res_col1, res_col2, res_col3 = st.columns(3)
+        if prediction[0] == 1:
+            st.error("### ⚠️ High Risk of Diabetes")
+            st.warning("The model predicts that this patient has a high risk of diabetes.")
+        else:
+            st.success("### ✅ Low Risk of Diabetes")
+            st.info("The model predicts that this patient has a low risk of diabetes.")
         
-        with res_col1:
-            if prediction == 1:
-                st.error("⚠️ **High Risk of Diabetes**")
-            else:
-                st.success("✅ **Low Risk of Diabetes**")
-        
-        with res_col2:
-            st.metric(
-                "Probability of No Diabetes",
-                f"{prediction_proba[0]:.2%}"
-            )
-        
-        with res_col3:
-            st.metric(
-                "Probability of Diabetes",
-                f"{prediction_proba[1]:.2%}"
-            )
-        
-        # Additional information
+        # Risk factors analysis
         st.markdown("---")
-        st.info("""
-        **Note:** This prediction is based on machine learning analysis and should not replace professional medical diagnosis. 
-        Please consult with a healthcare provider for proper medical evaluation.
-        """)
+        st.subheader("🎯 Risk Factor Analysis")
         
-        # Show processed input data
-        with st.expander("📋 View Processed Input Data"):
-            st.dataframe(manual_df, use_container_width=True)
-    
-    # Sidebar with information
-    with st.sidebar:
-        st.header("ℹ️ About")
-        st.markdown("""
-        This application uses a **Random Forest Classifier** trained on the PIMA Indians Diabetes Database.
+        risk_factors = []
+        if glucose > 140:
+            risk_factors.append("⚠️ High glucose level (>140 mg/dL)")
+        if insulin > 200:
+            risk_factors.append("⚠️ High insulin level (>200 μU/mL)")
+        if bmi > 35:
+            risk_factors.append("⚠️ High BMI (>35)")
+        if age > 40:
+            risk_factors.append("⚠️ Age over 40 years")
+        if dpf > 0.5:
+            risk_factors.append("⚠️ High genetic predisposition")
         
-        **Features Used:**
-        - Number of Pregnancies
-        - Glucose Level
-        - Insulin Level
-        - BMI (Body Mass Index)
-        - Diabetes Pedigree Function
-        - Age
+        if risk_factors:
+            st.warning("**Identified Risk Factors:**")
+            for factor in risk_factors:
+                st.write(f"- {factor}")
+        else:
+            st.info("✅ No major risk factors identified based on input values.")
         
-        **Note:** Blood Pressure and Skin Thickness were excluded during feature selection as they showed low correlation with the outcome.
-        """)
-        
+        # Recommendations
         st.markdown("---")
-        st.header("📈 Model Performance")
-        st.markdown("""
-        The model was trained using:
-        - **SMOTE** for handling class imbalance
-        - **StandardScaler** for feature scaling
-        - **GridSearchCV** for hyperparameter tuning
-        - **5-fold Cross-Validation** for model selection
-        """)
-        
-        st.markdown("---")
-        st.markdown("**Developed using Streamlit**")
-        st.markdown("Model: Random Forest Classifier")
+        st.subheader("💡 Recommendations")
+        if prediction[0] == 1:
+            st.write("- Consult with a healthcare professional immediately")
+            st.write("- Follow a balanced, low-sugar diet")
+            st.write("- Engage in regular physical activity")
+            st.write("- Monitor blood glucose levels regularly")
+        else:
+            st.write("- Continue maintaining a healthy diet")
+            st.write("- Stay physically active")
+            st.write("- Get regular health check-ups")
+
 
 if __name__ == "__main__":
     main()
